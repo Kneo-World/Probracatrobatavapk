@@ -17,8 +17,11 @@ jobs:
       - name: Build with Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init Probracat "com.kneo.probra" --web-dir .
+          # Указываем папку www вместо точки
+          npx cap init Probracat "com.kneo.probra" --web-dir www
           npx cap add android
+          # Создаем пустую папку assets, чтобы Gradle не ругался
+          mkdir -p android/app/src/main/assets
           npx cap sync
           cd android && ./gradlew assembleDebug
 
