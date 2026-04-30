@@ -5,58 +5,53 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Prepare and Build
+      - name: Prepare web assets and Capacitor
         run: |
+          # 1. Собрать статику в папку www
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
           cp script.js www/ 2>/dev/null || true
           cp -r images www/ 2>/dev/null || true
-          
+
+          # 2. Установить Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init Probracat "com.kneo.probra" --web-dir www
-          npx cap add android
-          
-          # ПРИНУДИТЕЛЬНАЯ ПЕРЕЗАПИСЬ КОНФИГА (Чиним дубликаты из лога)
-          cat <<EOF > android/app/build.gradle
-          apply plugin: 'com.android.application'
-          android {
-              namespace "com.kneo.probra"
-              compileSdk 35
-              defaultConfig {
-                  applicationId "com.kneo.probra"
-                  minSdk 22
-                  targetSdk 35
-                  versionCode 1
-                  versionName "1.0"
-              }
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                  }
-              }
-              packagingOptions {
-                  resources {
-                      excludes += ['/META-INF/{AL2.0,LGPL2.1}', '**/kotlin-stdlib.kotlin_module', '**/kotlin-stdlib-common.kotlin_module', '**/library_release.kotlin_module']
-                  }
-              }
-          }
-          dependencies {
-              implementation fileTree(include: ['*.jar'], dir: 'libs')
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation project(':capacitor-android')
+
+          # 3. Создать конфигурацию Capacitor (заменили ручной init)
+          cat <<EOF > capacitor.config.json
+          {
+            "appId": "com.kneo.probra",
+            "appName": "Probracat",
+            "webDir": "www",
+            "android": {
+              "minSdkVersion": 22,
+              "compileSdkVersion": 35,
+              "targetSdkVersion": 35
+            }
           }
           EOF
 
-          npx cap sync
-          cd android && ./gradlew assembleDebug
+          # 4. Добавить платформу Android
+          npx cap add android
+
+          # 5. Синхронизировать (даёт гарантию, что web/assets на месте)
+          npx cap sync android
+
+      - name: Build Android APK
+        run: cd android && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
