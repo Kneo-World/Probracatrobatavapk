@@ -11,22 +11,27 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          # Ставим 17-ю, она стабильнее для Capacitor
           java-version: '17'
 
-      - name: Prepare Folder and Build
+      - name: Prepare and Fix Project
         run: |
-          # Создаем временную папку www для сборщика
+          # 1. Готовим папку www (как и раньше)
           mkdir -p www
-          # Копируем туда всё: html, js и твою папку с фото
           cp index.html www/ 2>/dev/null || true
           cp script.js www/ 2>/dev/null || true
           cp -r images www/ 2>/dev/null || true
           
+          # 2. Инициализируем Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init Probracat "com.kneo.probra" --web-dir www
           npx cap add android
-          mkdir -p android/app/src/main/assets
+          
+          # 3. ХАК: Меняем Java 21 на 17 в конфигах проекта, чтобы не было ошибки
+          find android -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' {} +
+          find android -name "build.gradle" -exec sed -i 's/targetCompatibility = 21/targetCompatibility = 17/g' {} +
+          find android -name "build.gradle" -exec sed -i 's/sourceCompatibility = 21/sourceCompatibility = 17/g' {} +
+
+          # 4. Синхроним и собираем
           npx cap sync
           cd android && ./gradlew assembleDebug
 
