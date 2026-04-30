@@ -11,28 +11,26 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '17' # Вернем 17, она стабильнее с этим фиксом
+          java-version: '21'
 
       - name: Prepare and Build
         run: |
+          # 1. Сборка папки www
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
           cp script.js www/ 2>/dev/null || true
           cp -r images www/ 2>/dev/null || true
           
+          # 2. Установка Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init Probracat "com.kneo.probra" --web-dir www
           npx cap add android
           
-          # ФИКС ДУБЛИКАТОВ: разрешаем Gradle сливать файлы с одинаковыми именами
-          echo "android {
-              packagingOptions {
-                  pickFirst 'META-INF/kotlin-stdlib.kotlin_module'
-                  pickFirst 'META-INF/kotlin-stdlib-common.kotlin_module'
-                  pickFirst 'META-INF/library_release.kotlin_module'
-              }
-          }" >> android/app/build.gradle
+          # 3. ФИКС: Вставляем разрешение на дубликаты прямо в конфиг приложения
+          # Это уберет те ошибки, что были раньше
+          sed -i '/android {/a \    packagingOptions {\n        pickFirst "META-INF/kotlin-stdlib.kotlin_module"\n        pickFirst "META-INF/kotlin-stdlib-common.kotlin_module"\n        pickFirst "META-INF/library_release.kotlin_module"\n    }' android/app/build.gradle
 
+          # 4. Синхронизация и финальная сборка
           npx cap sync
           cd android && ./gradlew assembleDebug
 
