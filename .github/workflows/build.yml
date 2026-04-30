@@ -11,16 +11,21 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
+          # Ставим 17-ю, она стабильнее для Capacitor
           java-version: '17'
 
-      # Используем Capacitor, чтобы превратить HTML в APK
-      - name: Build with Capacitor
+      - name: Prepare Folder and Build
         run: |
+          # Создаем временную папку www для сборщика
+          mkdir -p www
+          # Копируем туда всё: html, js и твою папку с фото
+          cp index.html www/ 2>/dev/null || true
+          cp script.js www/ 2>/dev/null || true
+          cp -r images www/ 2>/dev/null || true
+          
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          # Указываем папку www вместо точки
           npx cap init Probracat "com.kneo.probra" --web-dir www
           npx cap add android
-          # Создаем пустую папку assets, чтобы Gradle не ругался
           mkdir -p android/app/src/main/assets
           npx cap sync
           cd android && ./gradlew assembleDebug
