@@ -15,22 +15,46 @@ jobs:
 
       - name: Prepare and Build
         run: |
-          # 1. Сборка папки www
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
           cp script.js www/ 2>/dev/null || true
           cp -r images www/ 2>/dev/null || true
           
-          # 2. Установка Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init Probracat "com.kneo.probra" --web-dir www
           npx cap add android
           
-          # 3. ФИКС: Вставляем разрешение на дубликаты прямо в конфиг приложения
-          # Это уберет те ошибки, что были раньше
-          sed -i '/android {/a \    packagingOptions {\n        pickFirst "META-INF/kotlin-stdlib.kotlin_module"\n        pickFirst "META-INF/kotlin-stdlib-common.kotlin_module"\n        pickFirst "META-INF/library_release.kotlin_module"\n    }' android/app/build.gradle
+          # ПРИНУДИТЕЛЬНАЯ ПЕРЕЗАПИСЬ КОНФИГА (Чиним дубликаты из лога)
+          cat <<EOF > android/app/build.gradle
+          apply plugin: 'com.android.application'
+          android {
+              namespace "com.kneo.probra"
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.kneo.probra"
+                  minSdk 22
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              packagingOptions {
+                  resources {
+                      excludes += ['/META-INF/{AL2.0,LGPL2.1}', '**/kotlin-stdlib.kotlin_module', '**/kotlin-stdlib-common.kotlin_module', '**/library_release.kotlin_module']
+                  }
+              }
+          }
+          dependencies {
+              implementation fileTree(include: ['*.jar'], dir: 'libs')
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation project(':capacitor-android')
+          }
+          EOF
 
-          # 4. Синхронизация и финальная сборка
           npx cap sync
           cd android && ./gradlew assembleDebug
 
