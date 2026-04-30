@@ -11,12 +11,11 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          # Даем ему 21-ю, раз он так просит
           java-version: '21'
 
       - name: Prepare and Build
         run: |
-          # 1. Создаем папку www и копируем всё туда
+          # 1. Готовим папку www
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
           cp script.js www/ 2>/dev/null || true
@@ -27,10 +26,17 @@ jobs:
           npx cap init Probracat "com.kneo.probra" --web-dir www
           npx cap add android
           
-          # 3. Синхронизируем файлы
+          # 3. ФИКС ДУБЛИКАТОВ (как на скрине image_e4bf71.jpg)
+          echo "configurations.all {
+              resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                  if (details.requested.group == 'org.jetbrains.kotlin') {
+                      details.useVersion '1.9.10'
+                  }
+              }
+          }" >> android/build.gradle
+
+          # 4. Сборка
           npx cap sync
-          
-          # 4. Собираем APK
           cd android && ./gradlew assembleDebug
 
       - name: Upload APK
