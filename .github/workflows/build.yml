@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'                # ← Java 21 обязательна
+          java-version: '21'
 
       - name: Accept licenses & install required Android SDK packages
         run: |
@@ -45,6 +45,17 @@ jobs:
 
           npx cap add android
           npx cap sync android
+
+      - name: Fix Kotlin duplicate classes
+        run: |
+          cat <<'GRADLE_EOF' >> android/app/build.gradle
+          configurations {
+              all {
+                  exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+                  exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+              }
+          }
+          GRADLE_EOF
 
       - name: Build APK
         working-directory: android
