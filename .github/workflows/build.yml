@@ -19,18 +19,22 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 35
+          build-tools: 35.0.0
+          accept-licenses: true
+
       - name: Prepare web assets and Capacitor
         run: |
-          # 1. Собрать статику в папку www
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
           cp script.js www/ 2>/dev/null || true
           cp -r images www/ 2>/dev/null || true
 
-          # 2. Установить Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          # 3. Создать конфигурацию Capacitor (заменили ручной init)
           cat <<EOF > capacitor.config.json
           {
             "appId": "com.kneo.probra",
@@ -44,10 +48,7 @@ jobs:
           }
           EOF
 
-          # 4. Добавить платформу Android
           npx cap add android
-
-          # 5. Синхронизировать (даёт гарантию, что web/assets на месте)
           npx cap sync android
 
       - name: Build Android APK
