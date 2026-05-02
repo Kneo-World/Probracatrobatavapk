@@ -4,35 +4,22 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Accept Android SDK licenses and install required packages
         run: |
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-          cd $ANDROID_SDK_ROOT/cmdline-tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-*.zip
-          # Перемещаем в стандартную структуру: cmdline-tools/latest
-          mkdir -p latest
-          mv cmdline-tools/* latest/
-          cd latest/bin
-          yes | ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
-          ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Prepare web assets and Capacitor
         run: |
@@ -50,8 +37,8 @@ jobs:
             "webDir": "www",
             "android": {
               "minSdkVersion": 22,
-              "compileSdkVersion": 34,
-              "targetSdkVersion": 34
+              "compileSdkVersion": 35,
+              "targetSdkVersion": 35
             }
           }
           EOF
@@ -59,7 +46,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Build Android APK
+      - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
