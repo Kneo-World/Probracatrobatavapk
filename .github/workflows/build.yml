@@ -28,6 +28,9 @@ jobs:
           cp script.js www/ 2>/dev/null || true
           cp -r images www/ 2>/dev/null || true
 
+          # Вставляем защиту от раннего выполнения
+          sed -i 's|<script src="script.js"></script>|<script>document.addEventListener("DOMContentLoaded", function() { var s = document.createElement("script"); s.src = "script.js"; document.body.appendChild(s); });</script>|' www/index.html
+
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
           cat <<EOF > capacitor.config.json
