@@ -4,6 +4,8 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,15 +18,21 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '21'
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 35
-          build-tools: 35.0.0
-          accept-licenses: true
+        run: |
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          cd $ANDROID_SDK_ROOT/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-*.zip
+          # Перемещаем в стандартную структуру: cmdline-tools/latest
+          mkdir -p latest
+          mv cmdline-tools/* latest/
+          cd latest/bin
+          yes | ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
+          ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
 
       - name: Prepare web assets and Capacitor
         run: |
@@ -42,8 +50,8 @@ jobs:
             "webDir": "www",
             "android": {
               "minSdkVersion": 22,
-              "compileSdkVersion": 35,
-              "targetSdkVersion": 35
+              "compileSdkVersion": 34,
+              "targetSdkVersion": 34
             }
           }
           EOF
@@ -52,7 +60,8 @@ jobs:
           npx cap sync android
 
       - name: Build Android APK
-        run: cd android && ./gradlew assembleDebug
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
