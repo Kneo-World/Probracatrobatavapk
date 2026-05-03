@@ -33,20 +33,15 @@ jobs:
           yes | ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
           ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
 
-      - name: Ensure index.html exists
+      - name: Ensure www/index.html exists
         run: |
-          if [ ! -f index.html ]; then
-            echo "ERROR: index.html not found in repository root"
+          if [ ! -f www/index.html ]; then
+            echo "ERROR: www/index.html not found"
             exit 1
           fi
 
-      - name: Prepare web assets and Capacitor
+      - name: Initialize Capacitor and sync
         run: |
-          mkdir -p www
-          cp index.html www/
-          cp script.js www/ 2>/dev/null || true
-          cp -r images www/ 2>/dev/null || true
-
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
           cat <<EOF > capacitor.config.json
