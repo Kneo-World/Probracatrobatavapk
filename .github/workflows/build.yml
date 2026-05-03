@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk   # совпадает с ANDROID_HOME
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,17 +21,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Accept Android SDK licenses & install tools
         run: |
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-          cd $ANDROID_SDK_ROOT/cmdline-tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-*.zip
-          mkdir -p latest
-          mv cmdline-tools/* latest/ 2>/dev/null || true
-          cd latest/bin
-          yes | ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
-          ./sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
+          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Ensure www/index.html exists
         run: |
