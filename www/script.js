@@ -345,6 +345,12 @@ scenes["Мегабоксик"] = {
 
 // GLOBAL LOOP
 function update() {
+    // Временная проверка – красный прямоугольник
+    ctx.fillStyle = "red";
+    ctx.fillRect(50, 50, 100, 100);   // появится красный квадрат, если скрипт жив
+    ctx.fillStyle = "white";
+    ctx.font = "40px Arial";
+    ctx.fillText("Canvas works", 50, 100);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const scene = scenes[currentScene];
     if (scene) {
