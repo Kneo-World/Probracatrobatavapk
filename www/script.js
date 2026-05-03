@@ -1,3 +1,37 @@
+// Глобальный перехват ошибок и вывод на экран
+window.onerror = function(message, source, lineno, colno, error) {
+    // Создаём canvas, если его ещё нет (на случай сбоя до создания)
+    var errCanvas = document.getElementById('errorCanvas');
+    if (!errCanvas) {
+        errCanvas = document.createElement('canvas');
+        errCanvas.id = 'errorCanvas';
+        errCanvas.width = window.innerWidth;
+        errCanvas.height = window.innerHeight;
+        document.body.appendChild(errCanvas);
+        var ctx = errCanvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, errCanvas.width, errCanvas.height);
+        ctx.fillStyle = 'black';
+        ctx.font = '18px monospace';
+        ctx.textBaseline = 'top';
+        ctx.fillText('⚠️ Ошибка JavaScript:', 10, 10);
+        ctx.font = '16px monospace';
+        ctx.fillText(message, 10, 40);
+        ctx.fillText('Файл: ' + source + ', строка: ' + lineno + ':' + colno, 10, 70);
+        if (error && error.stack) {
+            var stack = error.stack.split('\n').slice(0, 5).join('\n');
+            ctx.font = '14px monospace';
+            ctx.fillText(stack, 10, 100);
+        }
+    }
+    return true; // предотвращает стандартное всплытие
+};
+
+// Также обрабатываем ошибки в промисах (если используются)
+window.addEventListener('unhandledrejection', function(event) {
+    var reason = event.reason && event.reason.stack ? event.reason.stack : String(event.reason);
+    window.onerror('Unhandled Promise Rejection: ' + reason, '', 0, 0, event.reason);
+});
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
