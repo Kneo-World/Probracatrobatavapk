@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'               # <-- Возвращаем Java 21
 
       - name: Accept Android SDK licenses & install tools
         run: |
@@ -47,7 +47,6 @@ jobs:
               "compileSdkVersion": 34,
               "targetSdkVersion": 34,
               "allowMixedContent": true,
-              "captureInput": false,
               "webContentsDebuggingEnabled": true
             },
             "server": {
