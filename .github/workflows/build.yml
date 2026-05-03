@@ -5,38 +5,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk   # совпадает с ANDROID_HOME
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with: { node-version: '20' }
+      - uses: actions/setup-java@v3
+        with: { distribution: 'temurin', java-version: '21' }
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Accept Android SDK licenses & install tools
+      - name: Accept licenses & install SDK components
         run: |
           yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Ensure www/index.html exists
-        run: |
-          if [ ! -f www/index.html ]; then
-            echo "ERROR: www/index.html not found"
-            exit 1
-          fi
+        run: if [ ! -f www/index.html ]; then echo "ERROR: www/index.html not found"; exit 1; fi
 
-      - name: Initialize Capacitor and sync
+      - name: Capacitor init & sync
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-
           cat <<EOF > capacitor.config.json
           {
             "appId": "com.kneo.probra",
@@ -49,18 +36,14 @@ jobs:
               "allowMixedContent": true,
               "webContentsDebuggingEnabled": true
             },
-            "server": {
-              "androidScheme": "http"
-            }
+            "server": { "androidScheme": "http" }
           }
           EOF
-
           npx cap add android
           npx cap sync android
 
-          # Разрешаем конфликт дублирующихся классов Kotlin
-          cat <<'EOF' >> android/app/build.gradle
-
+          # Важное исправление конфликта Kotlin
+          cat <<'GRADLE' >> android/app/build.gradle
           configurations.all {
               resolutionStrategy {
                   force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
@@ -68,20 +51,16 @@ jobs:
                   force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
               }
           }
-          EOF
+          GRADLE
 
-      - name: List assets (diagnostic)
-        run: |
-          echo "====== content of assets ======"
-          find android/app/src/main/assets -type f || echo "no assets found!"
-          echo "==============================="
+      - name: Diagnostics – list assets
+        run: find android/app/src/main/assets -type f || echo "No assets!"
 
-      - name: Build Android APK
+      - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Probra-Game
           path: android/app/build/outputs/apk/debug/app-debug.apk
